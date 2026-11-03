@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the cookie_bot_protection module.
+ */
+
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\cookie_bot_protection\Form\SettingsForm;
+
+/**
+ * Convert string admin settings to array.
+ */
+function cookie_bot_protection_update_9001() {
+  /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
+  $config_factory = \Drupal::service('config.factory');
+  $config = $config_factory->getEditable(SettingsForm::SETTINGS);
+  $url_protected_patterns_string = $config->get('url_protected_patterns');
+  if (is_array($url_protected_patterns_string)) {
+    return;
+  }
+
+  $url_protected_patterns = explode(PHP_EOL, (string) $url_protected_patterns_string);
+  $config->set('url_protected_patterns', $url_protected_patterns);
+  DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.4.0', fn() => $config->save(), fn() => $config->save(FALSE));
+}

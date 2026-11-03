@@ -1,0 +1,8 @@
+{
+    "_config_name": "cookie_bot_protection.settings",
+    "url_protected_patterns": [],
+    "ua_whitelist_patterns": [],
+    "ip_whitelist": [],
+    "header_response_debug": false,
+    "redirect_error_delay": 5
+}

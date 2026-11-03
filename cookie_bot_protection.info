@@ -1,0 +1,6 @@
+name = 'Cookie bot protection'
+type =  module
+backdrop = 1.x
+package = 'Cookie bot protection'
+description = Protect pages from bots not managing cookies
+configure = admin/config/cookie_bot_protection/settings
