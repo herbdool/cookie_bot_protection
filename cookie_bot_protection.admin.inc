@@ -15,7 +15,7 @@ function cookie_bot_protection_settings_form($form, &$form_state) {
   $form['url_protected_patterns'] = [
     '#type' => 'textarea',
     '#title' => t('Protected URL patterns (one per line, PCRE)'),
-    '#description' => t('Only requests whose path matches one of these <a href="@pcre">regular expressions</a> will be challenged. E.g. <code>^/protected</code> for paths like <code>/protected/page</code>.', ['@pcre' => 'https://en.wikipedia.org/wiki/Perl_Compatible_Regular_Expressions']),
+    '#description' => t('Only requests whose path matches one of these <a href="@pcre">regular expressions</a> will be challenged. E.g. <code>^protected</code> for paths like <code>protected/page</code>.', ['@pcre' => 'https://en.wikipedia.org/wiki/Perl_Compatible_Regular_Expressions']),
     '#default_value' => implode(PHP_EOL, $config->get('url_protected_patterns')),
   ];
   $form['ua_whitelist_patterns'] = [
