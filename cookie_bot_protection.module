@@ -5,6 +5,8 @@
  * Cookie Bot Protection
  */
 
+use Symfony\Component\HttpFoundation\IpUtils;
+
 /**
  * The challenge cookie name.
  */
@@ -15,7 +17,7 @@ define('COOKIE_BOT_PROTECTION_COOKIE_NAME', 'SESScookiebotprotection');
  */
 function cookie_bot_protection_autoload_info() {
   return [
-    'IpUtils' => 'IpUtils/IpUtils.php',
+    'Symfony\Component\HttpFoundation\IpUtils' => 'IpUtils/IpUtils.php',
   ];
 }
 
@@ -186,13 +188,13 @@ function cookie_bot_protection_hash_payload(object $request, BackdropDateTime $d
 }
 
 /**
- * Check if the challenge need to be performed.
+ * Check if the challenge needs to be performed.
  *
  * @param object $request
  *   The current request.
  *
  * @return bool
- *   The result of the validation.
+ *   TRUE if the challenge needs to be performed, FALSE otherwise.
  *
  * @throws \Exception
  */
@@ -219,7 +221,7 @@ function cookie_bot_protection_is_needed(object $request) {
  *   The current request.
  *
  * @return bool
- *   Is the current url is part of the protected page list.
+ *   TRUE if the current url is part of the protected page list.
  */
 function cookie_bot_protection_is_needed_urls(object $request) {
   $patterns = config('cookie_bot_protection.settings')->get('url_protected_patterns');
@@ -243,7 +245,7 @@ function cookie_bot_protection_is_needed_urls(object $request) {
  *   The current request.
  *
  * @return bool
- *   Whitelist result.
+ *   TRUE if the User-Agent is whitelisted, FALSE otherwise.
  */
 function cookie_bot_protection_is_ua_whitelisted(object $request) {
   $ua_whitelist = config('cookie_bot_protection.settings')->get('ua_whitelist_patterns');
@@ -263,13 +265,13 @@ function cookie_bot_protection_is_ua_whitelisted(object $request) {
 }
 
 /**
- * Check if the Ip is whitelisted.
+ * Check if the IP is whitelisted.
  *
  * @param object $request
  *   The current request.
  *
  * @return bool
- *   Whitelist result.
+ *   TRUE if the IP is in the whitelist, FALSE otherwise.
  */
 function cookie_bot_protection_is_ip_whitelisted(object $request) {
   $ip_whitelist = config('cookie_bot_protection.settings')->get('ip_whitelist');
@@ -502,6 +504,7 @@ function cookie_bot_protection_redirect_target(string $url) {
  *   List of IPs or subnets (can be a string if only a single one).
  *
  * @return bool
+ *   TRUE if IP address is in the list, FALSE otherwise.
  */
 function _cookie_bot_protection_check_ip(string $request_ip, string|array $ips) {
   if (!is_array($ips)) {
@@ -511,7 +514,7 @@ function _cookie_bot_protection_check_ip(string $request_ip, string|array $ips) 
   $method = substr_count($request_ip, ':') > 1 ? 'checkIp6' : 'checkIp4';
 
   foreach ($ips as $ip) {
-    if (\IpUtils::$method($request_ip, $ip)) {
+    if (IpUtils::$method($request_ip, $ip)) {
       return true;
     }
   }

@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+namespace Symfony\Component\HttpFoundation;
+
 /**
  * Http utility functions.
  *
