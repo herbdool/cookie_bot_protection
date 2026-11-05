@@ -115,7 +115,10 @@ function cookie_bot_protection_init() {
     }
     elseif (in_array($request_challenge, $challenges_auth, TRUE)) {
       unset($request->query_parameters['backdrop_cbp_check']);
-      $response = 'redirect';
+      $response = (object) [
+        'type' => 'redirect',
+        'content' => '',
+      ];
     }
     else {
       list($response, $request) = cookie_bot_protection_deny($request);
@@ -144,18 +147,19 @@ function cookie_bot_protection_init() {
 
     // Ensure non‑caching.
     backdrop_add_http_header('Cache-Control', 'no-cache, no-store, must-revalidate, public, max-age=0');
-  }
 
-  switch ($response) {
-    case 'challenge':
-    case 'redirect':
-    case 'authorize':
-      $url = url($request->uri, array('absolute' => TRUE, 'query' => $request->query_parameters));
-      cookie_bot_protection_redirect_target($url);
-      break;
-    case 'deny':
-      backdrop_exit($request->uri);
-      break;
+    switch ($response->type) {
+      case 'challenge':
+      case 'redirect':
+      case 'authorize':
+        $url = url($request->uri, array('absolute' => TRUE, 'query' => $request->query_parameters));
+        cookie_bot_protection_redirect_target($url);
+        break;
+      case 'deny':
+        print $response->content;
+        exit();
+        break;
+    }
   }
 }
 
@@ -375,7 +379,12 @@ function cookie_bot_protection_challenge(object $request, string $challenge) {
   _cookie_bot_protection_create_cookie($challenge);
   _cookie_bot_protection_override_query_globals($request);
 
-  return ['challenge', $request];
+  $response = (object) [
+    'type' => 'challenge',
+    'content' => '',
+  ];
+
+  return [$response, $request];
 }
 
 /**
@@ -394,7 +403,12 @@ function cookie_bot_protection_authorize(object $request, string $challenge) {
   _cookie_bot_protection_create_cookie($challenge);
   _cookie_bot_protection_override_query_globals($request);
 
-  return ['authorize', $request];
+  $response = (object) [
+    'type' => 'authorize',
+    'content' => '',
+  ];
+
+  return [$response, $request];
 }
 
 /**
@@ -404,7 +418,7 @@ function cookie_bot_protection_authorize(object $request, string $challenge) {
  *   The current request.
  *
  * @return array
- *   Array of response type and request object.
+ *   Array of response and request objects.
  */
 function cookie_bot_protection_deny(object $request) {
   $message = 'Cookie bot protection: access denied for IP @ip (UA: @ua)';
@@ -414,9 +428,11 @@ function cookie_bot_protection_deny(object $request) {
   ];
   watchdog('cookie_bot_protection', $message, $context, WATCHDOG_WARNING);
 
-  $redirect_error_delay = (int) config('cookie_bot_protection')->get('redirect_error_delay');
+  $redirect_error_delay = (int) config('cookie_bot_protection.settings')->get('redirect_error_delay');
 
   backdrop_add_http_header('Status', '401 Unauthorized');
+
+  $content = '<h1>Excessive crawling detected</h1><p>We have blocked your request.</p>';
 
   // Remove cookie by setting an expiry in the past.
   $cookie_value = 'expires=' . gmdate('D, d-M-Y H:i:s \G\M\T', strtotime('-1 year'));
@@ -428,20 +444,23 @@ function cookie_bot_protection_deny(object $request) {
   if ($redirect_error_delay > 0) {
     unset($request->query_parameters['backdrop_cbp_check']);
 
-    // Refresh behavior need at least one content character for the Refresh
-    // header to be honoured.
-    print ' ';
-
-    // Build the Refresh header: "5; url=http://example.com/current/path"
+    // Build the Refresh header.
     $refresh_header = sprintf(
       '%d; url=%s',
       $redirect_error_delay,
-      $request->uri
+      url($request->uri, array('absolute' => TRUE)),
     );
     backdrop_add_http_header('Refresh', $refresh_header);
+
+    $content = '<h1>Excessive crawling detected</h1><p>We have blocked your request. This page will refresh to recheck.</p>';
   }
 
-  return ['deny', $request];
+  $response = (object) [
+    'type' => 'deny',
+    'content' => $content,
+  ];
+
+  return [$response, $request];
 }
 
 /**
