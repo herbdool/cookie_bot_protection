@@ -36,7 +36,7 @@ function cookie_bot_protection_config_info() {
  * Implements hook_menu().
  */
 function cookie_bot_protection_menu() {
-  $items['admin/config/cookie_bot_protection/settings'] = [
+  $items['admin/config/system/cookie_bot_protection/settings'] = [
     'title' => 'Cookie Bot Protection',
     'page callback' => 'backdrop_get_form',
     'page arguments' => ['cookie_bot_protection_settings_form'],
@@ -76,6 +76,10 @@ function _cookie_bot_protection_get_request() {
     'ip' => ip_address(),
     'headers' => cookie_bot_protection_get_all_headers(),
   );
+}
+
+function cookie_bot_protection_boot() {
+
 }
 
 /**
