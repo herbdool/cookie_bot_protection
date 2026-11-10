@@ -65,8 +65,12 @@ function cookie_bot_protection_permission() {
  * @return object
  */
 function _cookie_bot_protection_get_request() {
+  $url = request_path();
+  if (module_exists('language')) {
+    list($language, $url) = language_url_split_prefix($url, language_list(TRUE));
+  }
   return (object) array(
-    'uri' => request_path(),
+    'uri' => $url,
     'query_parameters' => backdrop_get_query_parameters(),
     'method' => $_SERVER['REQUEST_METHOD'],
     'ip' => ip_address(),
@@ -319,26 +323,23 @@ function cookie_bot_protection_get_all_headers() {
  * @param string $cookie_value
  */
 function _cookie_bot_protection_create_cookie(string $cookie_value) {
-  $attributes = [
-    'path'     => '/',
-    'domain'   => '',
-    'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-    'httponly' => TRUE,
-  ];
+  global $cookie_domain, $is_https;
 
   $cookie_parts = [
     rawurlencode(COOKIE_BOT_PROTECTION_COOKIE_NAME) . '=' . rawurlencode($cookie_value),
-    'Path=' . $attributes['path'],
+    'Path=/',
   ];
-  if (!empty($attributes['domain'])) {
-    $cookie_parts[] = 'Domain=' . $attributes['domain'];
-  }
-  if ($attributes['secure']) {
+
+  $cookie_parts[] = 'Domain=' . $cookie_domain;
+
+  if ($is_https) {
     $cookie_parts[] = 'Secure';
   }
-  if ($attributes['httponly']) {
-    $cookie_parts[] = 'HttpOnly';
-  }
+  $cookie_parts[] = 'HttpOnly';
+
+  // @todo see https://git.drupalcode.org/project/cookie_bot_protection/-/work_items/3595590
+  $cookie_parts[] = 'SameSite=Lax';
+
   $set_cookie_header = implode('; ', $cookie_parts);
 
   backdrop_add_http_header('Set-Cookie', $set_cookie_header);
@@ -436,10 +437,7 @@ function cookie_bot_protection_deny(object $request) {
 
   $content = '<h1>Excessive crawling detected</h1><p>We have blocked your request.</p>';
 
-  // Remove cookie by setting an expiry in the past.
-  $cookie_value = 'expires=' . gmdate('D, d-M-Y H:i:s \G\M\T', strtotime('-1 year'));
-
-  _cookie_bot_protection_create_cookie($cookie_value);
+  _backdrop_session_delete_cookie(COOKIE_BOT_PROTECTION_COOKIE_NAME);
 
   // Allow retry if eventually the challenge was still on a legitimate
   // user request.
